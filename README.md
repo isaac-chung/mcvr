@@ -1,8 +1,10 @@
 # MCVR
 
 Code for the paper *How Should We Rerank Multi-Constraint Video Search? Whole-Query Judgments,
-Frames, and Their Cost*. The repo holds scripts, prompts and configs only: no videos, labels or
-model outputs. Scripts read from `data/` and write to `results/`, both git-ignored, and every path
+Frames, and Their Cost*. The dataset (corpus, queries, facts and labels) is on Hugging Face:
+<https://anonymous-hf.com/a/1yr7dq5i07kv>.
+
+The repo holds scripts, prompts and configs only: no videos, labels or model outputs. Scripts read from `data/` and write to `results/`, both git-ignored, and every path
 is relative to the repo root, so run everything from there.
 
 ## Layout
@@ -70,7 +72,9 @@ What you need depends on what you want to run:
 
    Vript's licence forbids redistribution: keep `data/mc/vript_*/videos/` local.
 
-2. **The MCVR release** (queries, facts, labels, index descriptions):
+2. **The MCVR release** (queries, facts, labels, index descriptions), at
+   <https://anonymous-hf.com/a/1yr7dq5i07kv>. Pass its dataset id as `--repo`, or download the
+   parquet folders yourself and use `--from-dir`:
 
    ```bash
    uv run --env-file .env python download/release.py --repo <namespace>/MCVR
