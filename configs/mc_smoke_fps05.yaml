@@ -1,0 +1,33 @@
+# Smoke set rebuilt with denser index frames and decoupled grounding (docs/plan.md, "Note: frame
+# sampling in production"). Same 500 videos and 100 query sources as configs/mc_smoke.yaml
+# (data/mc/smoke/sample.json); new descriptions, index, queries and gate. Read by
+# dev/build_index_dev.py, build_queries.py and gate.py (--config configs/mc_smoke_fps05.yaml).
+name: mc-smoke-fps05
+seed: 0
+data_root: data/mc
+results_dir: results
+smoke_dir: data/mc/smoke  # sample.json (shared with the 16-frame run)
+out_dir: data/mc/smoke_fps05  # queries.jsonl, constraints.jsonl, grounding_spotcheck.csv
+gate_out: results/smoke_fps05
+
+datasets: [shot2story, carebench, vript_short, vript_long]
+
+# index: 0.5 fps over the whole video, at least 8 frames, labelled "Frame i of n (t = ... s):"
+describer: "gemini:gemini-3.5-flash-lite"
+describe_prompt: prompts/describe_v4.txt
+n_frames: 8  # the floor of the fps policy
+frame_policy: {n: 8, fps: 0.5}  # -> data/mc/<dataset>/frames_fps0.5/<video_id>/
+frame_labels: true
+descriptions_file: descriptions_fps05.jsonl  # keeps descriptions.jsonl (16 frames) untouched
+embedder: "openai:text-embedding-3-small"
+workers: 8
+describe_per_minute: 300
+
+# query grounding only (no system sees these): 1 fps, at least 16, at most 240 frames
+ground_frame_policy: {n: 16, fps: 1.0, max_n: 240}  # -> data/mc/<dataset>/frames_fps1/<video_id>/
+
+# gate
+full_corpus: 8603
+gate_at: 20
+gate_threshold: 0.6
+depth: 500

@@ -1,0 +1,15 @@
+A search query for a video was written from a list of facts about the video (the gold facts). An automatic splitter then split the query into constraints. Compare the two lists.
+
+For each gold fact, say how the split constraints cover it:
+- "full": one constraint, or several together, state the whole fact (wording may differ; exact text, numbers and colours must agree).
+- "partial": the constraints state only part of the fact, or change a detail.
+- "none": no constraint states it.
+For each split constraint, give the number of the gold fact it states (or part of), or null when it states none of them (generic, added, temporal-only or about something else).
+
+Gold facts:
+{facts}
+
+Split constraints:
+{constraints}
+
+Answer with JSON only: {"facts": [{"fact": 1, "match": "full" or "partial" or "none", "constraints": [constraint numbers]}, ...], "constraints": [{"constraint": 1, "fact": fact number or null}, ...]}

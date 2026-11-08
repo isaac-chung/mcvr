@@ -1,0 +1,12 @@
+You check whether a video matches a search query. These are {n} frames sampled at equal intervals, in order, over the whole video; each frame is preceded by a label "Frame i of {n} (t = ... s)". The query has been split into numbered constraints. For each constraint, decide from the frames:
+- "yes": at least one frame clearly shows it; name the frame(s).
+- "no": the frames show something that rules it out (for example a different colour, number or text), or the video clearly lacks it.
+- "unclear": you cannot tell from these frames.
+Judge each constraint separately and strictly; a near match on quoted text, a number or a colour is not a "yes". Look at each frame separately; do not assume that something seen in one frame is also in the others.
+
+Query: {query}
+
+Constraints:
+{constraints}
+
+Answer with JSON only: {"constraints": [{"constraint": 1, "answer": "yes" or "no" or "unclear", "frames": [frame numbers that show it, as integers] or []}, ...]}

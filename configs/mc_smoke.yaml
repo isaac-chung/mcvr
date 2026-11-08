@@ -1,0 +1,30 @@
+# Smoke / dev set of the multi-constraint study (docs/plan.md, "Smoke and dev set").
+# Read by dev/sample_dev.py, index.py and gate.py (not by the routing-pilot CLI, which is not in this repo).
+name: mc-smoke
+seed: 0
+data_root: data/mc
+results_dir: results
+smoke_dir: data/mc/smoke  # sample.json (agent B), queries.jsonl and constraints.jsonl (agent A)
+
+# 500 videos, captioned only, Vript short integrity:false excluded, one unit per source video
+datasets: [shot2story, carebench, vript_short, vript_long]
+strata:
+  shot2story: {lt30s: 100, 30to60s: 20}
+  carebench: {any: 80}
+  vript_short: {lt30s: 75, 30to60s: 75}
+  vript_long: {30to60s: 50, 1to2min: 50, 2to4min: 50}
+sources_per_group: 25  # query sources per dataset, spread evenly over its strata
+
+# index
+describer: "gemini:gemini-3.5-flash-lite"
+describe_prompt: prompts/describe_v4.txt
+n_frames: 16
+embedder: "openai:text-embedding-3-small"
+workers: 8
+describe_per_minute: 300  # paid Gemini calls per minute (cache hits do not wait)
+
+# gate
+full_corpus: 8603
+gate_at: 20
+gate_threshold: 0.6
+depth: 500  # S0 ranks the whole smoke corpus

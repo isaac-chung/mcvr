@@ -1,0 +1,5 @@
+Below is a search query for a collection of videos. Split it into its separate constraints: the individual things a video must show to match the query. Each constraint is one short, self-contained statement that can be checked on its own (repeat the subject where needed, so "a man in a red cap holding a sign that reads OPEN" becomes "a man wears a red cap" and "a man holds a sign that reads OPEN"). Keep exact wording of any quoted or on-screen text, numbers and colours. Do not add anything the query does not say, and do not drop anything it does say. A query that asks for one thing gives one constraint.
+
+Query: {query}
+
+Answer with JSON only: {"constraints": ["...", "..."]}

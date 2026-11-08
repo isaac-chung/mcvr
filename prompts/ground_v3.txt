@@ -1,0 +1,13 @@
+These are {n} frames from one video, in time order. They may cover only one part of the video. Each frame is preceded by a label "Frame i of {n} (t = ... s)", where t is the time in the video. Below is a numbered list of facts. For each fact, decide whether these frames show it.
+
+Answer for each fact:
+- "yes" only if at least one frame clearly shows the fact. Name the frame or frames where it is visible and say briefly what you see there that shows it.
+- "no" if the frames clearly do not show it: what the fact is about appears in no frame, or it appears in a way that does not fit (another colour, number, text, object or place).
+- "unsure" if you cannot tell: the relevant part is too small, blurred, cut off or hidden, or the fact cannot be judged from still frames.
+
+Look at each frame separately; do not assume that something seen in one frame is also in the others. Use only what is visible, not what is likely or typical. Quoted text may differ in case or punctuation.
+
+Facts:
+{facts}
+
+Answer with JSON only: {"visible": [{"fact": 1, "answer": "yes" or "no" or "unsure", "frames": [up to 3 frame numbers, as integers, that show the fact most clearly] or [], "evidence": "under 15 words: what is seen in the first of those frames, or why the answer is no" or ""}, ...]} with one entry per fact, in order.

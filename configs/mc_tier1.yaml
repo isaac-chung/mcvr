@@ -1,0 +1,41 @@
+# Tier 1 of the methodology revision (methodology_plan_20261031.md, written
+# 2026-10-31): graded per-constraint verifiers S2g / S3g on the 0-10 scale of S4 / S5, S5 on
+# every test query, the trigger over the full query distribution, and the label fill.
+# Read by pipeline/run_graded_systems.py on top of configs/mc_full.yaml (index, sets, verifier, judge).
+name: mc-tier1
+base: configs/mc_full.yaml
+
+# the study's test set: 100 source videos drawn by pipeline/draw_test_set.py --seed 11 --out <this file>
+# (stratified by dataset and Vript length bin); every Tier 1 stage and the eval run on these sources' queries.
+# Unset it (or pass --all-sources) to run on every source of configs/mc_full.yaml.
+sources_file: results/full/select/sources100.json
+second_verifier_subset: 150  # per set, balanced over k, seed 0, drawn inside the 100 sources
+
+# A1-A3: graded per-constraint verifiers (one integer 0-10 per split constraint)
+graded_desc_prompt: prompts/verify_desc_v2.txt
+graded_frames_prompt: prompts/verify_frames_v2.txt
+aggregate: mean  # pre-registered candidate score: mean grade over the constraints
+secondary_aggregate: min  # free rescoring from the saved grades
+graded_depth: 50  # S2g on S0's top 50 (as S2 / S4), rescored at top 10
+# frames (S3g, S5-on-all): pool = the frozen select stage's pool (S4@50) top 10
+tost_margin: 0.02  # S3g vs S5 equivalence margin (nDCG@10), set before the run
+
+# trigger analysis (free): dev-chosen margin threshold stays 2; baselines reported alongside
+trigger:
+  margin_threshold: 2
+  k_threshold: 3  # "frames iff k >= 3"
+  top_score_threshold: 8  # "frames iff S4 top score < 8"
+  fracs: [0.8, 0.9]  # cross-fit operating points (gain kept)
+
+# D: label fill for every (source, candidate) pair the new systems bring into a top 10
+fill:
+  systems: ["S2g@50", "S2g@10", "S3g", "S5"]  # whose top 10 must be judged
+  ids_file: results/full/tier1/fill_ids.json
+
+# stage caps on new input tokens: projection + 50% (per-call means of results/full/runs/*/cost.json:
+# S2 290 in; S5 8.65k in with ~21 images; S3 8.76k in)
+caps:
+  tier1_desc: 45e6  # S2g@50 (full set 99,450 calls, 29.8M; the 722 test queries: 7.3M left after the stopped run)
+  tier1_second: 7e6  # S2g@50 gpt-5.5, 300 x 50 = 15,000 calls x ~300 = 4.5M
+  tier1_frames: 95e6  # S3g on the 722 test queries x 10 = 7,220 calls, projection 61.6M
+  tier1_frames_all: 210e6  # S5 on the remaining test queries (570 x 10 = 5,700 calls, 45.7M; full set 139M)

@@ -1,0 +1,7 @@
+You judge how well a video matches a search query. {evidence}
+
+Query: {query}
+
+Give one score from 0 to 10 for how well the whole video matches the whole query: 10 means it clearly matches every part of the query, 0 means it clearly does not match at all. A video that matches only part of the query scores in between. Be strict about quoted text, numbers and colours.
+
+Answer with JSON only: {"score": integer from 0 to 10}

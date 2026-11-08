@@ -1,0 +1,18 @@
+Below is a written description (caption) of one video, possibly split into numbered scenes, and a numbered list of facts. Using only the caption, decide for each fact whether the video shows it.
+
+Answer for each fact:
+- "yes" if the caption states the fact or something that plainly implies it. Paraphrases and synonyms count; quoted on-screen text may differ in case, punctuation or a small spelling slip.
+- "no" if the caption contradicts the fact: it describes the same kind of thing (the person, object, text, number or setting the fact is about) in a way that does not fit, for example a different colour, count, text or place.
+- "unclear" if the caption does not mention what the fact is about, or mentions it too vaguely to decide. Do not answer "no" only because something is not mentioned.
+
+Judge each fact on its own; a fact holds if any part of the video shows it. Use only the caption, not what is likely or typical. A caption marked "[...]" was shortened; do not treat the missing part as evidence either way.
+
+For "yes" and "no", give a quote: the shortest passage of the caption, copied word for word (at most 20 words), that supports your answer. For "unclear", give the closest passage or "".
+
+Caption:
+{caption}
+
+Facts:
+{facts}
+
+Answer with JSON only: {"facts": [{"fact": 1, "answer": "yes" or "no" or "unclear", "quote": "..."}, ...]} with one entry per fact, in order.

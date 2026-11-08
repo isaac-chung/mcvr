@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# MCVR: downloaded data, model outputs and paid-call caches never go into git
+/data/
+/results/
+*.mp4

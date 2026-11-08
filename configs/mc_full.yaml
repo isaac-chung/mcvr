@@ -1,0 +1,84 @@
+# Full run of the multi-constraint study (docs/full_run_plan.md, approved 2026-10-23).
+# Same index and query-pipeline settings as configs/mc_smoke_v2.yaml; the corpus is all 8,603
+# videos in data/mc/ and the query sources are 280 test sources (seed 1) disjoint from the 100
+# dev (smoke) sources and from their YouTube ids. Read by pipeline/*.py.
+name: mc-full
+seed: 1
+data_root: data/mc
+results_dir: results
+dev_sample: data/mc/smoke/sample.json  # the 100 dev sources, excluded from test
+smoke_dir: data/mc/full  # sample.json: "videos" = all 8,603, "query_sources" = 280 test
+out_dir: data/mc/full  # constraints.jsonl, queries.jsonl, queries_twin.jsonl, twins.jsonl, audits
+gate_out: results/full
+
+datasets: [shot2story, carebench, vript_short, vript_long]
+# test sources per stratum (captioned, integrity not false, English for Vript long)
+test_strata:
+  shot2story: {any: 40}
+  carebench: {any: 40}
+  vript_short: {lt30s: 40, 30to60s: 40}
+  vript_long: {30to60s: 40, 1to2min: 40, 2to4min: 40}
+
+# index (as configs/mc_smoke_fps05.yaml): 0.5 fps, floor 8, labelled frames
+describer: "gemini:gemini-3.5-flash-lite"
+describe_prompt: prompts/describe_v4.txt
+n_frames: 8
+frame_policy: {n: 8, fps: 0.5}  # -> data/mc/<dataset>/frames_fps0.5/<video_id>/
+frame_labels: true
+descriptions_file: descriptions_fps05.jsonl
+embedder: "openai:text-embedding-3-small"
+embed_max_tokens: 8191  # per input (API limit); longer texts are truncated or split per scene
+workers: 8
+describe_per_minute: 300
+
+# query pipeline v2 (as configs/mc_smoke_v2.yaml)
+grounders: ["gemini:gemini-3.5-flash-lite", "openai:gpt-6-astra"]
+index_check: ["gemini:gemini-3.5-flash-lite"]
+grounding_media_resolution: low
+local_frames: {n: 6, min_offset_s: 0.5, max_side: 768}
+fallback_policy: {n: 8, fps: 1.0, max_n: 30}
+twins:
+  embedder: "openai:text-embedding-3-small"
+  neighbours: 5
+  absence_policy: {n: 8, fps: 1.0, max_n: 24}
+  max_b_passes: 3
+  assume_b_passes: 2
+
+# systems (docs/full_run_plan.md section 1)
+verifier: "openai:gpt-6-sol@low"
+splitter: "openai:gpt-6-luna@low"
+second_verifier: "openai:gpt-5.5@low"
+rerank_depth: 50  # S2 / S4 on S0's top 50, rescored at top 10
+frame_top: 10  # S3 / S5 on S0's top 10 (S4@50's top 10 if twin-both < 200; decision 3)
+twin_both_min: 200
+nested_frame_sample: 150  # Vript only, balanced over (bin, k), seed 1
+second_verifier_subset: 150  # per set, seed 0
+
+# pooled frame judge
+judge:
+  models: ["gemini:gemini-3.5-flash-lite", "openai:gpt-6-astra"]
+  rankings_dir: results/full/runs
+  top: 10
+  max_frames: 16
+  max_side: 512
+  extra_share: 0.25
+  full_k: 2
+  out_dir: data/mc/full/judge
+
+# stage caps on new input tokens: projection + 50% (approved 2026-10-23); recomputed at each
+# go/no-go check from actual counts
+caps:
+  describe: 247e6  # projection 164.4M (Gemini)
+  embed: 8.3e6  # 5.5M
+  build: 46e6  # Gemini 12.1M + astra 13.2M + luna 5.2M
+  desc_systems: 73e6  # split 0.4M + S2@50 27.7M + S4@50 20.4M
+  frames: 164e6  # S3 + S5, 109.1M
+  judge: 154e6  # Gemini 59.4M + astra 43.0M
+  second_verifier: 11.3e6  # 7.5M
+  repeats: 27e6  # decision 5, 18M
+total_cap: 694e6
+
+# gate
+full_corpus: 8603
+gate_at: 20
+depth: 500

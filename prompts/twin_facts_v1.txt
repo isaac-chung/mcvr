@@ -1,0 +1,24 @@
+You compare the captions of two different videos, A and B. Each caption is split into numbered scenes. A caption marked "[...]" was shortened.
+
+List two kinds of facts:
+1. "shared": facts that hold for BOTH videos according to their captions. Write each one so that, as written, it is true of both videos. When the two captions differ in a detail, use the wording that fits both, or leave the fact out.
+2. "distinct": facts that hold for video A but not for video B: either B's caption contradicts the fact (it describes the same kind of thing differently: another colour, text, number, object or place), or B's caption describes its people, objects and setting in enough detail that the fact would have been mentioned and it is not.
+
+Rules for every fact:
+- one property only, checkable by looking at a single frame;
+- type is exactly one of: object (presence of a specific object, animal or kind of person), attribute (colour, clothing, hair, appearance or material of an entity), on_screen_text (text visible in the video, quoted), count (an explicit number of entities), scene (setting or location);
+- no actions, speech, sounds, thoughts, order of events, camera work, or positions of things relative to each other;
+- self-contained: name the entity by what it is and how it looks, never "the same", "the other", "the one on the left", "she" or "the video"; under 20 words.
+For distinct facts, prefer on-screen text, objects and attributes, whose absence can be checked by looking.
+
+For each fact give "text", "type" and "scene_a" (the scene number in A's caption it comes from). For shared facts also give "scene_b" (the scene number in B's caption). For distinct facts also give "in_b": "contradicted" or "absent", and "b_evidence": the shortest passage of B's caption (at most 15 words) that contradicts it or shows the detail it would have been mentioned in, or "".
+
+Give at most 6 shared and at most 4 distinct facts, the most specific ones first. If the videos share nothing visual, return an empty "shared" list.
+
+Answer with JSON only: {"shared": [{"text": str, "type": str, "scene_a": int, "scene_b": int}, ...], "distinct": [{"text": str, "type": str, "scene_a": int, "in_b": str, "b_evidence": str}, ...]}
+
+Caption of video A:
+"""{caption_a}"""
+
+Caption of video B:
+"""{caption_b}"""

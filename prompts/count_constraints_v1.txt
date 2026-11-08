@@ -1,0 +1,12 @@
+Below is a search query for a collection of news and event videos. List its constraints: the atomic, checkable conditions a video must meet to match the query. A condition is one of: an entity (a named person, organisation, team, product or object), an event or action, an attribute of an entity or event (a quality, role, amount, outcome), a place, a date or time, or text that must appear on screen.
+
+Rules:
+- Each condition is one short, self-contained statement that can be checked on its own (repeat the subject where needed).
+- Split conjunctions: "Putin and Zelensky meet in Istanbul" gives "Putin is present", "Zelensky is present", "they meet", "the meeting is in Istanbul".
+- Do not add anything the query does not say, and do not drop anything it does say.
+- Do not split a single name or fixed phrase ("2016 Summer Olympics" is one condition; "Event Horizon Telescope" is one entity).
+- A query that asks for one thing gives one condition.
+
+Query: {query}
+
+Answer with JSON only: {"constraints": ["...", "..."]}

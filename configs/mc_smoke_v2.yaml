@@ -1,0 +1,60 @@
+# Smoke set with query pipeline v2 (docs/plan.md 4.3-4.5): local-frame grounding with two-model
+# agreement, natural nested and twin queries, template renders, pooled frame judge. Same 500
+# videos and 100 query sources as configs/mc_smoke.yaml (data/mc/smoke/sample.json). The index is
+# the 0.5 fps one of configs/mc_smoke_fps05.yaml (index keys below are identical, so
+# dev/build_index_dev.py gives the same index hash with either config).
+# Read by dev/build_queries_dev.py, build_twins.py and judge_labels_dev.py.
+name: mc-smoke-v2
+seed: 0
+data_root: data/mc
+results_dir: results
+smoke_dir: data/mc/smoke  # sample.json (shared)
+out_dir: data/mc/smoke_v2  # constraints.jsonl, queries.jsonl, queries_twin.jsonl, twins.jsonl, audits
+gate_out: results/smoke_v2
+
+datasets: [shot2story, carebench, vript_short, vript_long]
+
+# index (as configs/mc_smoke_fps05.yaml): 0.5 fps, floor 8, labelled frames
+describer: "gemini:gemini-3.5-flash-lite"
+describe_prompt: prompts/describe_v4.txt
+n_frames: 8
+frame_policy: {n: 8, fps: 0.5}  # -> data/mc/<dataset>/frames_fps0.5/<video_id>/
+frame_labels: true
+descriptions_file: descriptions_fps05.jsonl
+embedder: "openai:text-embedding-3-small"
+workers: 8
+describe_per_minute: 300
+
+# query pipeline v2 (src.grounding_v2, src.twins)
+grounders: ["gemini:gemini-3.5-flash-lite", "openai:gpt-6-astra"]  # both must say yes
+index_check: ["gemini:gemini-3.5-flash-lite"]  # "the index dropped it": one call on all index frames
+# Gemini per-image media resolution for grounding, the index check and (unless judge sets its
+# own) the frame judge: low / medium / high; unset (null) = API default, today's cache keys
+grounding_media_resolution: low  # results/smoke_v2/media_resolution_test.md (2026-10-23)
+local_frames: {n: 6, min_offset_s: 0.5, max_side: 768}  # -> data/mc/<dataset>/frames_local/<id>/
+fallback_policy: {n: 8, fps: 1.0, max_n: 30}  # scenes without times (Vript short): whole video
+twins:
+  embedder: "openai:text-embedding-3-small"  # over captions, mining only
+  neighbours: 5
+  absence_policy: {n: 8, fps: 1.0, max_n: 24}  # d absent in B: whole-video sample
+  max_b_passes: 3  # B passes per source, best pair first, stop at 3 shared + d
+  assume_b_passes: 2  # for the cost estimate only
+max_input_tokens: 25000000  # guard on projected paid input tokens (override with --max-input-tokens)
+
+# pooled frame judge (src.judge_frames, dev/judge_labels_dev.py)
+judge:
+  models: ["gemini:gemini-3.5-flash-lite", "openai:gpt-6-astra"]
+  rankings_dir: results/smoke_v2/runs  # S0.jsonl, S4.jsonl, ... (query_id, ranking)
+  top: 10
+  max_frames: 16
+  max_side: 512
+  extra_share: 0.25
+  full_k: 2
+  out_dir: data/mc/smoke_v2/judge
+  max_input_tokens: 40000000
+
+# gate
+full_corpus: 8603
+gate_at: 20
+gate_threshold: 0.6
+depth: 500

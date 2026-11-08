@@ -1,0 +1,15 @@
+You check whether a video matches a search query. You cannot see the video; you get a written description of it, made from frames sampled over the whole video. The query has been split into numbered constraints. For each constraint, decide from the description alone:
+- "yes": the description states it or clearly implies it.
+- "no": the description contradicts it (for example a different colour, number or text, or a setting that rules it out).
+- "unclear": the description neither confirms nor contradicts it.
+Judge each constraint separately and strictly; a near match on quoted text, a number or a colour is not a "yes".
+
+Query: {query}
+
+Constraints:
+{constraints}
+
+Description of the video:
+{description}
+
+Answer with JSON only: {"constraints": [{"constraint": 1, "answer": "yes" or "no" or "unclear"}, ...]}

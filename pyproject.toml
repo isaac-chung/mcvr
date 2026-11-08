@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mcvr"
+version = "0.1.0"
+description = "MCVR: multi-constraint video retrieval, code to reproduce the paper"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "numpy",
+    "pandas",
+    "pyarrow",
+    "pyyaml",
+    "httpx",
+    "huggingface-hub",
+    "sentence-transformers",
+    "transformers",
+    "torch",
+    "sentencepiece>=0.2.2",
+    "protobuf>=7.36.2",
+    "py3langid>=0.4.0",
+    "tabulate>=0.10.0",
+    "scikit-learn>=1.9.1",
+    "tiktoken>=0.14.0",
+]
+
+[project.optional-dependencies]
+llm = ["anthropic", "openai"]
+
+[dependency-groups]
+dev = ["pytest", "ruff", "ir-measures"]
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint.per-file-ignores]
+# one-off data download scripts
+"download/*" = ["SIM115", "B023", "PLW1510", "BLE001", "RUF046", "PERF102", "ISC004"]
+
+[tool.pytest.ini_options]
+markers = ["live: needs HF_TOKEN and network access"]
+addopts = "-m 'not live'"

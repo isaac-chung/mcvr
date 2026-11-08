@@ -1,0 +1,32 @@
+# Pilot: 100 English MultiVENT 2.0 test queries over the 870 English judged videos plus
+# n_distractors other English test videos that have a transcript.
+name: pilot-multivent
+seed: 0
+n_queries: 100
+k: 10
+depth: 100
+oracle_epsilon: 0.01
+relaxed_epsilon: 0.05
+n_distractors: 2000
+indexes: [ASR, VIS, DESC]
+
+# S0 text embedder. compression_ratio is Jasper's token-compression setting
+# (recommended range 0.3 to 0.8). Fixed here so every run uses the same value.
+embedder: "st:infgrad/Jasper-Token-Compression-600M"
+embedder_kwargs:
+  batch_size: 16
+  dtype: float32
+  device: cpu  # Jasper's token pooling is not implemented on MPS
+  query_prompt_name: query
+  encode_kwargs:
+    compression_ratio: 0.6
+
+# SigLIP model that produced the shipped features (1152 dimensions suggests so400m; unverified).
+siglip: google/siglip-so400m-patch14-384
+
+# S2 router LLM, for example "anthropic:<model>" or "openai:<model>". Empty disables S2.
+llm: ""
+router_prompt: prompts/router_v1.txt
+
+data_dir: data/multivent
+results_dir: results

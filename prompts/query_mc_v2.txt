@@ -1,0 +1,10 @@
+Write one search query that a person could type to find a video that shows all of the facts below. Rules:
+- cover every fact and add nothing that is not in the facts;
+- write as a person searching from memory would: reword freely, and you may describe a quoted text or an exact detail loosely (a sign reading "OPEN" can become "a shop with an open sign"), as long as the fact stays checkable;
+- the facts may come from different moments of the video; do not imply that they happen together or that their subjects are next to each other (no "beside", "while", "with" joining facts from different moments) unless the facts say so; it is fine to write "at one point ... later ..." or to list them as things the video shows;
+- write one fluent phrase or sentence with articles and prepositions, not a list of keywords; about {words} words; no questions, no "video of", no quotation marks.
+
+Facts:
+{facts}
+
+Answer with JSON only: {"query": "...", "phrases": {"1": "the part of the query that carries fact 1", "2": "..."}}

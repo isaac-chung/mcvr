@@ -1,0 +1,25 @@
+You extract atomic, visually checkable facts from the caption of one video. The caption is split into numbered scenes.
+
+A fact is ONE property of the video that a person could confirm by looking at frames of the video. Leave out audio, speech content, thoughts, intentions and narrator commentary. Split compound statements: "a man in a red shirt holds two cups" gives three facts (a man wears a red shirt; a man holds cups; there are two cups). Do not repeat a fact. Each fact must be self-contained and understandable on its own, without the caption or the other facts: name its entity fully by what it is and how it looks (e.g. "the woman in the red apron wears a green scarf", not "the woman on the left", "the other character", "she" or "the glass"). Never write "the video" or "the clip".
+
+For each fact give:
+- "text": the fact, under 20 words;
+- "type": exactly one of
+  - action: what someone or something does (e.g. "a man lifts a barbell")
+  - object: presence of a specific object, animal or kind of person (e.g. "a ukulele is visible")
+  - attribute: colour, clothing, hair, appearance or material of an entity
+  - on_screen_text: text visible in the video (titles, signs, labels, logos with words); quote it
+  - count: an explicit number of entities (e.g. "three dogs are present")
+  - scene: setting or location (e.g. "an indoor gym", "a beach at night")
+  - spatial_relation: where things are relative to each other
+  - temporal_order: an order of events (e.g. "after mixing, she pours the batter")
+  - other: anything else visual (shot type, editing, lighting)
+- "scene": the number of the scene the fact comes from;
+- "single_frame": true if one frame could show the fact (an object, an attribute, a sign), false if it needs several frames (an order of events, a change, a motion that cannot be seen in one still);
+- "self_contained": true if a reader who has not seen the caption knows which entity the fact is about; false if it relies on position or earlier mentions ("the woman on the left", "the other one", "the same man");
+- "distinctive": true if the fact would help single out this video among about 8,600 diverse web videos (a named colour on a specific item, quoted text, an exact count, an uncommon object); false if it is true of many videos (e.g. "a man is present", "the scene is indoors").
+
+Return JSON only: {"facts": [{"text": str, "type": str, "scene": int, "single_frame": bool, "self_contained": bool, "distinctive": bool}, ...]}
+
+Caption:
+"""{caption}"""
