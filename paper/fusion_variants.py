@@ -21,7 +21,7 @@ as S1 in pipeline/run_systems.py stage_retrieve / src.systems.decompose.fuse):
     S1-mean+Q   mean cosine over the constraints and the full query
 
 No weight is chosen on test: every variant is reported. Evaluation (shared with
-paper/cross_encoder.py): nDCG@10 and R@1 by set (natural = the paper's "nested", twin)
+pipeline/cross_encoders.py): nDCG@10 and R@1 by set (natural = the paper's "nested", twin)
 and by k under strict (source only) and expanded labels (data/mc/full/judge/qrels_expanded.jsonl,
 as pipeline/run_systems.py --stage eval), paired cluster-bootstrap CIs over sources (the repo's
 pilot_verify.paired, 10,000 resamples), and for expanded labels the share of top-10 slots
@@ -78,13 +78,14 @@ SANITY = {  # results/full/report.md, expanded labels, nDCG@10
 }
 
 
-# ---- shared evaluation (also used by paper/cross_encoder.py) ----------------------------
+# ---- shared evaluation (also used by pipeline/cross_encoders.py) ----------------------------
 
 
-def load_eval(n_boot: int, sources_file: str | None = None) -> dict:
+def load_eval(n_boot: int, sources_file: str | None = None, config: str | None = None) -> dict:
     """Settings, query rows, saved runs, both label sets and the judged pairs; with
-    sources_file (the test set, as systems.py --sources-file) restricted to its queries."""
-    S = FS.settings(argparse.Namespace(smoke=False, config=None, out=None, n_boot=n_boot))
+    sources_file (the test set, as systems.py --sources-file) restricted to its queries; config
+    (default configs/mc_full.yaml) picks the label folder."""
+    S = FS.settings(argparse.Namespace(smoke=False, config=config, out=None, n_boot=n_boot))
     ctx = FS.load_context(S, need_index=False)
     sets = FS.load_sets(S, ctx)
     if sources_file:
@@ -206,8 +207,9 @@ def sanity(E: dict) -> dict:
     return out
 
 
-def sanity_summary_only(E: dict) -> dict:
-    """As sanity() against summary.json only (the report.md constants are the full set's)."""
+def sanity_summary_only(E: dict, strict: bool = True) -> dict:
+    """As sanity() against summary.json only (the report.md constants are the full set's); with
+    strict=False (labels other than the paper's on purpose) a mismatch is reported, not fatal."""
     saved = json.loads((E["S"].out / "eval" / "summary.json").read_text())
     out = {}
     for a, b in SANITY:
@@ -220,7 +222,7 @@ def sanity_summary_only(E: dict) -> dict:
             ]
             ok = all(abs(ours[x] - theirs[x]) < 1e-9 for x in ("mean", "ci_low", "ci_high"))
             out[f"{a} - {b} / {name}"] = {"ours": ours, "summary_json": theirs, "match": ok}
-    if not all(v["match"] for v in out.values()):
+    if strict and not all(v["match"] for v in out.values()):
         sys.exit(f"evaluation does not reproduce results/full/eval/summary.json: {out}")
     return out
 

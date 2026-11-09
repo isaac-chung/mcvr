@@ -14,6 +14,8 @@ Gemini / OpenAI pools, --prompt, and the prompt-fix test.
     uv run --env-file .env python pipeline/judge_labels.py --stage run
     uv run --env-file .env python pipeline/judge_labels.py --stage run \
         --fill-queries results/full/select/frames_subset.json      # all top-10 pairs, no sample
+    uv run --env-file .env python pipeline/judge_labels.py --stage run \
+        --fill-queries <ids.json> --extra-runs QW@50=<run.jsonl> ...  # fill for runs outside runs/
     uv run python pipeline/judge_labels.py --stage stats                # qrels + stats, no calls
     uv run --env-file .env python pipeline/judge_labels.py --stage prompt-test \
         --prompt prompts/judge_frames_v2.txt                         # decision 6, smoke pairs
@@ -273,6 +275,10 @@ def stage_run(S, args) -> None:
     rank = rankings(S)
     if not rank:
         sys.exit(f"no rankings in {S.runs}: run pipeline/run_systems.py first")
+    for spec in args.extra_runs:  # NAME=PATH, e.g. the local rerankers of cross_encoders.py
+        name, path = spec.split("=", 1)
+        for line in read_jsonl(Path(path)):
+            rank.setdefault(name, {})[line["query_id"]] = [d for d, _ in line["ranking"]]
     judged = judged_union([out / "judged.jsonl", *(SMOKE_JUDGED if S.smoke else ())])
     pools, _plan, planned = JP.judge_tasks(rows, rank, jcfg)
     if args.fill_queries:
@@ -598,6 +604,12 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--out")
     ap.add_argument("--prompt", help="judge prompt (default judge.prompt or judge_frames_v1)")
     ap.add_argument("--fill-queries", help="JSON {set: [query ids]}: judge all their top-10 pairs")
+    ap.add_argument(
+        "--extra-runs",
+        nargs="*",
+        default=[],
+        help="NAME=PATH run files (jsonl) added to the rankings, e.g. for a label fill",
+    )
     ap.add_argument("--project-only", action="store_true")
     ap.add_argument("--check-cache", action="store_true", help="projection skips cached calls")
     ap.add_argument("--no-canary", action="store_true")

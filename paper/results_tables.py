@@ -107,14 +107,17 @@ def pooled(costs: dict, system: str, field: str) -> float | None:
     return sum(r[field] * r["queries"] for r in rows) / n
 
 
-def bold_best(cells: list[list[str]], values: list[list[float | None]], cols: list[int]) -> None:
+def bold_best(
+    cells: list[list[str]], values: list[list[float | None]], cols: list[int], tol: float = 0.0
+) -> None:
+    """Bold the best value per column; with tol, also every value less than tol below it."""
     for c in cols:
         vals = [(v[c], i) for i, v in enumerate(values) if v[c] is not None]
         if not vals:
             continue
         best = max(v for v, _ in vals)
         for v, i in vals:
-            if f3(v) == f3(best):
+            if f3(v) == f3(best) or best - v < tol:
                 cells[i][c] = f"\\textbf{{{cells[i][c]}}}"
 
 

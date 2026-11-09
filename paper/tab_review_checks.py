@@ -379,6 +379,7 @@ def check_pool(D: dict) -> dict:
         "only_in": {s: 0 for s in sys_pool},
     }
     pos |= {"in_some_all_query_system": 0, "in_no_top10_of_query": 0, "via_k_ge_3_sample": 0}
+    pos["outside_pool"] = 0  # judged only in a fill for runs outside runs/ (local rerankers)
     frame_pos = {"positives": 0, "in_S3_or_S5_not_S4@50": 0, "in_all_query_sys_not_frame_sys": 0}
     frame_ids = {r["query_id"] for _, rs in D["frames"].values() for r in rs}
     for name, rs in D["sets"].items():
@@ -397,7 +398,10 @@ def check_pool(D: dict) -> dict:
                     pos["only_in"][hit[0]] += 1
                 pos["in_some_all_query_system"] += any(s in ALL_QUERY_SYS for s in hit)
                 pos["in_no_top10_of_query"] += not hit
-                pos["via_k_ge_3_sample"] += extra(pools[src][d])
+                if d in pools.get(src, {}):
+                    pos["via_k_ge_3_sample"] += extra(pools[src][d])
+                else:
+                    pos["outside_pool"] += 1
                 if q in frame_ids:
                     frame_pos["positives"] += 1
                     fr = {s for s in hit if s in FRAME_SYS}

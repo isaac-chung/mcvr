@@ -76,7 +76,7 @@ caps:
   judge: 154e6  # Gemini 59.4M + astra 43.0M
   second_verifier: 11.3e6  # 7.5M
   repeats: 27e6  # decision 5, 18M
-total_cap: 694e6
+total_cap: 700e6  # 694e6 for the paper's main run; +6M for the 2026-11-09 cross-encoder label fill
 
 # gate
 full_corpus: 8603

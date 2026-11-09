@@ -155,6 +155,36 @@ uv run python pipeline/fact_types_build.py
 uv run --env-file .env python pipeline/fact_types_judge.py --all                                                     # fact types (Option A)
 ```
 
+Cross-encoder baselines: off-the-shelf rerankers score S0's top 50 descriptions against the whole
+query, locally (no API call; the weights come from Hugging Face once; `--device mps` or `cuda`).
+Their top 10s were then judged like every other system's, so this comes before the evaluation:
+
+```bash
+SRC="--sources-file results/full/select/sources100.json"
+uv run python pipeline/cross_encoders.py --kind qwen $SRC   # Qwen3-VL-Reranker-2B      -> results/full/rebuttal/cross_encoder_qwen/
+uv run python pipeline/cross_encoders.py --kind pw $SRC     # LightOn-rerank-PW-2B      -> pointwise_pw/
+uv run python pipeline/cross_encoders.py --kind lw $SRC     # LightOn-rerank-LW-0.8B    -> listwise_lw/
+uv run python pipeline/cross_encoders.py --kind late $SRC   # pplx-embed-v2-late-0.6b   -> late_pplx/ (judged, not reported)
+uv run python pipeline/cross_encoders.py --kind ce $SRC     # bge-reranker-v2-m3        -> cross_encoder/ (appendix, not judged)
+
+# label fill: every unjudged top-10 pair of these runs on the 722 test queries (paid, frame judge)
+uv run python -c "import json; q = json.load(open('results/full/select/sources100.json'))['queries']; open('results/full/rebuttal/local_fill_ids.json', 'w').write(json.dumps(q))"
+R=results/full/rebuttal
+uv run --env-file .env python pipeline/judge_labels.py --stage run --fill-queries $R/local_fill_ids.json --extra-runs \
+    QW@50=$R/cross_encoder_qwen/runs/natural/CE@50.jsonl QW@50=$R/cross_encoder_qwen/runs/twin/CE@50.jsonl \
+    PW@50=$R/pointwise_pw/runs/natural/PW@50.jsonl PW@50=$R/pointwise_pw/runs/twin/PW@50.jsonl \
+    LW@50=$R/listwise_lw/runs/natural/LW@50.jsonl LW@50=$R/listwise_lw/runs/twin/LW@50.jsonl \
+    LI@50=$R/late_pplx/runs/natural/LI@50.jsonl LI@50=$R/late_pplx/runs/twin/LI@50.jsonl
+
+# the cross-encoders against the filled labels (Table 1's cross-encoder block)
+uv run python pipeline/cross_encoders.py --kind qwen --from-saved $SRC --out $R/cross_encoder_qwen/localfill
+uv run python pipeline/cross_encoders.py --kind pw --from-saved $SRC --out $R/pointwise_pw/localfill
+uv run python pipeline/cross_encoders.py --kind lw --from-saved $SRC --out $R/listwise_lw/localfill
+```
+
+The fill writes into the paper's labels (`data/mc/full/judge/`), so every evaluation below already
+includes it.
+
 ### 4. Evaluation (free)
 
 ```bash
@@ -166,7 +196,30 @@ These write `results/full/eval/summary.json` and `results/full/report.md` (all s
 expanded labels, cluster-bootstrap intervals, costs, S6) and `results/full/tier1/{summary.json,report.md}`
 (S2 vs S4@50, the S3/S5 equivalence test, the frame gain, the trigger, length).
 
-### 5. Development set (paid)
+### 5. Ablation: a text-embedding-3-large first stage (paid)
+
+Ablation (f) rebuilds the description index with `text-embedding-3-large` (same descriptions,
+its own index store; the paper's index is never touched), reruns S0 and S1 on it (S0-L, S1-L),
+then the paper's rerankers on S0-L's top 50. Calls the paper's runs already made are cache hits,
+so only new candidates are paid. The labels stay the paper's; unjudged top-10 videos are reported
+with condensed nDCG@10 (unjudged dropped) and strict labels next to the expanded ones.
+
+```bash
+SRC="--sources-file results/full/select/sources100.json"
+uv run --env-file .env python pipeline/embedder_large.py --dry-run $SRC   # tokens to pay
+uv run --env-file .env python pipeline/embedder_large.py $SRC             # index, S0-L, S1-L -> results/full/rebuttal/embedder_large/
+uv run python pipeline/embedder_large_rerank.py setup                     # results/full_large/runs from S0-L, S1-L
+uv run --env-file .env python pipeline/embedder_large_rerank.py s4        # S4@50 on S0-L's top 50
+uv run --env-file .env python pipeline/embedder_large_rerank.py s2g       # S2
+uv run --env-file .env python pipeline/embedder_large_rerank.py s5        # S5
+uv run --env-file .env python pipeline/embedder_large_rerank.py s3g       # S3
+uv run python paper/embedder_large_eval.py                                # -> summary_rerank.json, report_rerank.md
+```
+
+Each rerank step takes `--project-only` to print its cost first. Everything it writes goes to
+`results/full_large/`, so `results/full/` is only read.
+
+### 6. Development set (paid)
 
 The dev set sets the S6 threshold (margin at most 2) and gives the description-length ablation and
 several cost figures. Configs: `configs/mc_smoke*.yaml`.
@@ -191,7 +244,7 @@ uv run python dev/trigger_dev.py
 `dev/verifiers_dev.py` (gold splits), `dev/second_verifier_dev.py`, `dev/judge_noise_dev.py` and
 `dev/media_resolution_dev.py` give the remaining dev numbers.
 
-### 6. Human labels
+### 7. Human labels
 
 ```bash
 uv run python human/make_label_sheets.py \
@@ -203,7 +256,7 @@ uv run python human/make_label_sheets.py \
 The sheets are static HTML pages. Annotators export one CSV per task into the same folder;
 `human/carry_over.py` copies earlier answers into new sheets as hints.
 
-### 7. Tables, figures and numbers (free)
+### 8. Tables, figures and numbers (free)
 
 Outputs go to `results/paper/tables/` and `results/paper/figures/` (copies next to the sources in
 `results/full/`). The paper's own copies were edited by hand afterwards: the 2026-11-04 system names
@@ -212,10 +265,12 @@ S3/S5 column (the script prints S3 − S5).
 
 | Paper | Script |
 |---|---|
-| Table 1 (`tab:results`) | `paper/table1_results.py` |
+| Table 1 (`tab:results`) | `paper/table1_results.py`; the cross-encoder block was added by hand from `results/full/rebuttal/{cross_encoder_qwen,pointwise_pw,listwise_lw}/localfill/summary.json` (section 3) |
+| Cross-encoder finding and the methods' cross-encoder baselines | `pipeline/cross_encoders.py --kind {qwen,pw,lw} --from-saved …` (section 3) |
 | Figure 1 (contrasts) | `paper/fig1_contrasts.py` |
 | Figure 2 (trigger) | `paper/fig2_trigger_sweep.py results/paper/data_trigger_sweep.csv`, `paper/trigger_analysis.py`, `paper/fig2_frontier.py`, `paper/fig2_trigger_cis.py`, then `paper/fig2_trigger.py` |
-| Ablations table (`tables/ablations.tex`) | assembled from Table 1, `tab_review_checks`, `tab_w5_long_descriptions`, `gemini_frame_verifier` and the eval reports |
+| Ablations table (`tables/ablations.tex`) | assembled from Table 1, `tab_review_checks`, `tab_w5_long_descriptions`, `gemini_frame_verifier`, `embedder_large_eval` (panel f) and the eval reports |
+| First-stage embedder: ablation (f) and its appendix paragraph | `pipeline/embedder_large.py` (S0-L, S1-L) and `paper/embedder_large_eval.py` (rerankers) (section 5) |
 | Finding 1 (same ten candidates) and `tab:w1-pools` | `paper/tab_w1_pools.py` |
 | Finding 2 and `tab:reagg` (other aggregations) | `paper/tab_reagg.py` |
 | Finding 3 (where the frame gain comes from) | `paper/frame_gain_decomposition.py` |
@@ -228,7 +283,7 @@ S3/S5 column (the script prints S3 − S5).
 | Second-verifier Spearman, length collinearity, corpus parts | `paper/extra_checks.py {spearman,collinearity,corpus-part} --sources-file …` |
 | Splitter errors | `paper/splitter_errors.py --sources-file … --out results/full/todo_recompute/split_check` |
 | Fusion variants | `paper/fusion_variants.py --sources-file …` (reads the embedding cache) |
-| Cross-encoder | `paper/cross_encoder.py --from-saved --sources-file …` (the reranker itself runs on a local GPU) |
+| Appendix "Cross-encoders" (bge-reranker-v2-m3 first) | `pipeline/cross_encoders.py --kind ce --from-saved --sources-file …` |
 | Gemini frame verifier | `paper/gemini_frame_verifier.py --stage s5 --s5-system S5_gemini-3.8-flash-medium --sources-file …` |
 | `tab:perk`, `tab:frames` | `paper/tab_per_k.py` |
 | Description length (`length_*.tex`) | `paper/tab_length.py` |
@@ -249,7 +304,9 @@ also holds the helpers `table1_results.py` imports.
 A few numbers in the paper come from one-off computations that are not in this repo: the
 gpt-5.5 vs gpt-6-sol S2 row of ablation (d) and the cross-verifier graded contrasts, the "frame gain
 on stated and omitted facts" paragraph, the pre-fill label counts, the 5.2 videos S4@50 and S0
-share in their top ten, "0.6 contradicted per stated fact" and the dev fact-judge κ .91.
+share in their top ten, "0.6 contradicted per stated fact", the dev fact-judge κ .91, and the
+cross-encoders' input tokens per query in Table 1 (saved as `results/full/rebuttal/reranker_tokens.json`
+with no script that writes it).
 
 ## Tests
 
